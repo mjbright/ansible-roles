@@ -1,0 +1,30 @@
+
+---
+# tasks file for container creation
+- name: Create subnet fact
+  ansible.builtin.set_fact:
+    subnet: "{{ SUBNET_PART }}.0/{{ CIDR_LEN }}"
+
+- name: Expand and produce list of usable IP addresses in subnet
+  ansible.builtin.set_fact:
+    subnet_range: "{{ subnet | ansible.utils.usable_range }}"
+
+- name: Start container
+  community.docker.docker_container:
+    cleanup:     true
+    detach:      true
+    image:       "{{ IMAGE_NAME }}:{{ IMAGE_TAG  }}"
+    name:        "{{ PREFIX }}-{{ item }}"
+    hostname:    "{{ PREFIX }}-{{ item }}"
+    output_logs: true
+    networks:
+    - name: "{{ NETWORK }}"
+      ipv4_address: "{{ subnet_range['usable_ips'][ IP_START_IDX + item | int ] }}"
+      aliases:
+      - "{{ C_NAME }}"
+    env:
+      SSH_USERNAME:    "{{ SSH_USER }}"
+      SSH_ADMIN:       "yes"
+      AUTHORIZED_KEYS: "{{ lookup('file', SSH_PUB_KEY_FILE) }}"
+  with_sequence: count="{{ NUM_VMS }}" 
+

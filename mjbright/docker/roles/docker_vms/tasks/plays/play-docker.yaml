@@ -1,0 +1,28 @@
+
+---
+- name: Pull and image and start the container
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  debugger: "on_failed"
+
+  #module_defaults:
+    #group/community.docker.docker:
+      #tls: true
+      #timeout: 120
+
+  tasks:
+    - name: Pull image
+      community.docker.docker_image_pull:
+        name: mjbright/ubuntu-sshd
+        tag: 0.1
+
+    - name: Start container
+      community.docker.docker_container:
+        cleanup:     true
+        detach:      true
+        #image:       mjbright/ubuntu-sshd:0.122
+        image:       mjbright/ubuntu-sshd:0.1
+        name:        docker-test
+        output_logs: true
+

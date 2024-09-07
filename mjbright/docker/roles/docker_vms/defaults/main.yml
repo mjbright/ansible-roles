@@ -1,0 +1,22 @@
+---
+# defaults file for docker-vms
+NUM_VMS:       1
+IP_START_IDX:  10
+
+IMAGE_NAME:    "mjbright/ubuntu-sshd"
+IMAGE_TAG:     "0.1"
+
+PREFIX:        "host"
+C_NAME:        "{{ PREFIX }}-{{ item }}"
+NETWORK:       "{{ PREFIX }}-net"
+SUBNET_PART:   "172.32.0"
+CIDR_LEN:      24
+
+SSH_KEY_FILE:       ~/.ssh/id_ed25519
+SSH_PUB_KEY_FILE: "{{ SSH_KEY_FILE }}.pub"
+SSH_BASE_HOST_PORT: 0
+SSH_USER:           "ansible"
+
+EXTRA_OPTS:     ""
+RUN_OPTS:       ""
+

@@ -1,0 +1,56 @@
+
+---
+# tasks file for container creation
+- name: Create subnet fact
+  ansible.builtin.set_fact:
+    subnet: "{{ SUBNET_PART }}.0/24"
+
+- name: Expand and produce list of usable IP addresses in subnet
+  ansible.builtin.set_fact:
+    subnet_range: "{{ subnet | ansible.utils.usable_range }}"
+
+#- name: show range
+  #debug:
+    #msg: "{{ subnet_range }}"
+
+#- name: show range of usable_ips
+  #debug:
+    #msg: "{{ subnet_range['usable_ips'] }}"
+
+#- name: show 0th element in range
+  #debug:
+    #msg: "{{ subnet_range['usable_ips'][0] }}"
+
+#- name: show 1st element in range
+  #debug:
+    #msg: "{{ subnet_range['usable_ips'][1] }}"
+
+- name: Start container
+  community.docker.docker_container:
+    cleanup:     true
+    detach:      true
+    image:       "{{ IMAGE_NAME }}:{{ IMAGE_TAG  }}"
+    name:        "{{ PREFIX }}-{{ item }}"
+    hostname:    "{{ PREFIX }}-{{ item }}"
+    output_logs: true
+    networks:
+    - name: "{{ NETWORK }}"
+      ipv4_address: "{{ subnet_range['usable_ips'][ IP_START_IDX + item | int ] }}"
+      # ALMOST: but fixed offset
+      # ipv4_address: "{{ subnet_range['usable_ips'][ 10 + item | int ] }}"
+      # ALMOST: but bugs at .1 address:
+      # ipv4_address: "{{ subnet_range['usable_ips'][ item | int ] }}"
+      #ipv4_address: "{{ subnet_range['usable_ips'][ item ] | ansible.utils.ipmath(IP_START_IDX) }}"
+      #ipv4_address: "{{ subnet_range['usable_ips'][ item + IP_START_IDX | int ] }}"
+      #ipv4_address: "{{ SUBNET_PART }}.{{ item + IP_START_IDX | int | str }}"
+      #ipv4_address: "{{ SUBNET_PART }}.{{ item + {% IP_START_IDX | int %} }}"
+      #ipv4_address: "{{ SUBNET_PART }}.{{ item {% int | IP_START_IDX %} }}"
+      #ipv4_address: "{{ SUBNET_PART }}.11"
+      aliases:
+      - "{{ C_NAME }}"
+    env:
+      SSH_USERNAME:    "{{ SSH_USER }}"
+      SSH_ADMIN:       "yes"
+      AUTHORIZED_KEYS: "{{ lookup('file', SSH_PUB_KEY_FILE) }}"
+  with_sequence: count="{{ NUM_VMS }}" 
+

@@ -1,0 +1,18 @@
+
+---
+# (pre-)tasks file for container creation
+
+- name: Pull image
+  community.docker.docker_image_pull:
+    name: "{{ IMAGE_NAME }}"
+    tag:  "{{ IMAGE_TAG  }}"
+
+- name: Create a docker bridge network
+  community.docker.docker_network:
+    name:        "{{ NETWORK }}"
+    driver:      bridge
+    enable_ipv6: false
+    ipam_config:
+      #- subnet: 172.32.5.0/24
+      - subnet: "{{ SUBNET_PART }}.0/{{ CIDR_LEN }}"
+

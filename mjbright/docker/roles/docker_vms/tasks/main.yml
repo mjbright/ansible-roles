@@ -1,0 +1,17 @@
+---
+# tasks file
+- name: Perform pre-tasks - pull image, create network
+  import_tasks: pre-tasks-net-container.yaml
+  #gather_facts: false
+  #debugger:     "on_failed"
+
+- name: Perform tasks - create containers
+  import_tasks: tasks-container.yaml
+  #gather_facts: false
+  #debugger:     "on_failed"
+
+- name: Perform cleanup - delete netork & containers
+  import_tasks: tasks-cleanup.yaml
+  #gather_facts: false
+  #debugger:     "on_failed"
+

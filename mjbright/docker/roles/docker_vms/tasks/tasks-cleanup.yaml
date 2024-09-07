@@ -1,0 +1,38 @@
+
+---
+# tasks file for container/network removal
+
+- name: Cleanup
+  when: clean
+  tags: clean
+
+  block:
+  - name: List Containers (including stopped Containers)
+    #shell: docker ps -aq | grep "{{ PREFIX }}-"
+    shell: docker ps -a | awk '{print $NF}' | grep "{{ PREFIX }}-"
+    ignore_errors: true
+    register: container_list
+
+  - name: Cleanup Containers-info
+    debug:
+      msg: "Cleanup containers {{ container_list.stdout }}"
+
+  - name: Cleanup Containers
+    #shell: set -x; docker rm -f "{{ container_list.stdout }}"
+    shell: set -x; docker rm -f $( docker ps -a | awk '{print $NF}' | grep "{{ PREFIX }}-" )
+    when:  container_list.stdout != ""
+    #register: stderr_list
+
+  #- name: Cleanup Containers-debug
+    #debug:
+      #msg: "{{ stderr_list.stderr }} - {{ stderr_list.stdout }}"
+
+  - name: Cleanup Network-info
+    debug:
+      msg: "Cleanup network {{ NETWORK }}"
+
+  - name: Cleanup network
+    community.docker.docker_network:
+      name:        "{{ NETWORK }}"
+      state:       absent
+

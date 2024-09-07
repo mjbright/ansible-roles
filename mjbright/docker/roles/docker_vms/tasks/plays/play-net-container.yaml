@@ -1,0 +1,72 @@
+
+---
+- name: Pull image, create network, create container
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    image_name:  mjbright/ubuntu-sshd
+    image_tag:   0.1
+    c_name:      lab5-1
+    docker_network_name: lab5-net
+    clean:       false
+    subnet_part: "172.32.5"
+    cidr_len:    24
+    ipIdx:       11
+    pub_key_file: "~/.ssh/id_ed25519.pub"
+     
+  pre_tasks:
+    - name: Pull image
+      community.docker.docker_image_pull:
+        name: "{{ image_name }}"
+        tag:  "{{ image_tag  }}"
+
+    - name: Create a docker bridge network
+      community.docker.docker_network:
+        name:        "{{ docker_network_name }}"
+        driver:      bridge
+        enable_ipv6: false
+        ipam_config:
+          #- subnet: 172.32.5.0/24
+          - subnet: "{{ subnet_part }}.0/{{ cidr_len }}"
+
+  tasks:
+    - name: Start container
+      community.docker.docker_container:
+        cleanup:     true
+        detach:      true
+        image:       "{{ image_name }}:{{ image_tag  }}"
+        name:        "{{ c_name }}"
+        hostname:    "{{ c_name }}"
+        output_logs: true
+        networks:
+        - name: "{{ docker_network_name }}"
+          ipv4_address: "{{ subnet_part }}.{{ ipIdx }}" #/{{ cidr_len }}"
+          aliases:
+          - lab5-1
+        env:
+          SSH_USERNAME:    ansible
+          SSH_ADMIN:       "yes"
+          AUTHORIZED_KEYS: "{{ lookup('file', pub_key_file) }}"
+        
+    - name: Cleanup
+      when: clean
+      tags: clean
+      block:
+      - name: List Containers (including stopped Containers)
+        shell: docker ps -aq
+        register: container_list
+        when: clean
+
+      - name: Cleanup Containers
+        #shell: docker rm -f 3619b2a5d13e
+        shell: docker rm -f "{{ container_list.stdout } }}"
+        when: clean and container_list.stdout != ""
+
+      - name: Cleanup network
+        #shell: docker network rm "{{ docker_network_name }}"
+        when: clean
+        community.docker.docker_network:
+          name:        "{{ docker_network_name }}"
+          state:       absent
+
